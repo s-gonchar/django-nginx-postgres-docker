@@ -9,8 +9,7 @@ services:
       - ./static_volume:/var/static  # <-- bind the static files
       - ./media_volume:/var/media  # <-- bind the media files
     networks:
-      - nginx_network
-      - database1_network
+      - internal_py
 
   nginx:
     image: nginx:1.15
@@ -22,23 +21,25 @@ services:
       - ./logs/nginx:/var/log/nginx
       - ./static_volume:/var/static  # <-- bind the static files again so Nginx can share volume
       - ./media_volume:/var/media  # <-- bind the media files again so Nginx can share volume
-    depends_on:  # <-- wait for djangoapp to be "ready" before starting this service
+    depends_on: # <-- wait for djangoapp to be "ready" before starting this service
       - djangoapp
     networks:
-      - nginx_network  
+      - internal_py
 
-  database1:  # <-- IMPORTANT: same name as in Djano settings.py, otherwise Django won't find the database!
+  database1: # <-- IMPORTANT: same name as in Djano settings.py, otherwise Django won't find the database!
     image: postgres:11
     container_name: database1
-    env_file:  # <-- match values to Djano settings.py
+    env_file: # <-- match values to Djano settings.py
       - config/db/database1_env
-    networks:
-      - database1_network  
     volumes:
       - ./postgres/data:/var/lib/postgresql/data # <-- bind the database to local directory
+    networks:
+      - internal_py
 
 networks:
-  nginx_network:
-    driver: bridge
-  database1_network:
-    driver: bridge
+    internal_py:
+        driver: bridge
+        ipam:
+            driver: default
+            config:
+                - subnet: 172.24.24.0/24
